@@ -239,7 +239,8 @@ func UpdateServiceExpiryRequest(c *gin.Context) {
 	}()
 
 	event.SetNotifiyBoth()
-	event.SetLog(models.EventLogLevelINFO, fmt.Sprintf("New Request submitted to change the expiry of the service, id: %s", id))
+	username := c.Request.Context().Value("username").(string)
+	event.SetLog(models.EventLogLevelINFO, fmt.Sprintf("New Request submitted by User: (%s) with Justification: (%s) to change the expiry of the service, id: %s", id, username, expiryRequest.Justification))
 
 	logger.Debug("successfully created request")
 	c.Status(http.StatusCreated)
@@ -344,7 +345,8 @@ func NewGroupRequest(c *gin.Context) {
 	}()
 
 	event.SetNotifiyBoth()
-	event.SetLog(models.EventLogLevelINFO, fmt.Sprintf("New Request(%s) has been submitted to add to the group: %s", id, *grp.Name))
+
+	event.SetLog(models.EventLogLevelINFO, fmt.Sprintf("New Request(%s) has been submitted by User: (%s) with Justification: (%s) to add to the group: %s", id,  username, request.Justification,*grp.Name))
 
 	logger.Debug("successfully created request")
 	c.Status(http.StatusCreated)
