@@ -30,6 +30,7 @@ import {
   TableToolbarContent,
   OverflowMenu,
   OverflowMenuItem,
+  Modal,
 } from "@carbon/react";
 import ApproveRequest from "./PopUp/ApproveRequest";
 import RequestDetails from "./PopUp/RequestDetail";
@@ -150,6 +151,7 @@ const RequestList = () => {
   const [filterType, setFilterType] = useState("");
   const [filterState, setFilterState] = useState("");
   const [filterUsername, setFilterUsername] = useState("");
+  const [confirmAction, setConfirmAction] = useState(null);
 
   const filteredHeaders = isAdmin
     ? headers // Display all buttons for admin users
@@ -178,11 +180,49 @@ const RequestList = () => {
     setTitle(title);
     setMessage(message);
     errored ? setNotifyKind("error") : setNotifyKind("success");
+    // Refresh the table data after successful operations
+    if (!errored) {
+      fetchAllRequest();
+    }
   };
 
   const handleActionClick = (action, row) => {
-    selectRows = [row];
-    setActionProps(action);
+    // Find the original data row by matching the id
+    const originalRow = rows.find(r => r.id === row.id);
+    selectRows = [originalRow || row];
+    
+    // Reject action goes directly to its modal (which has comment field and confirmation)
+    if (action.key === REJECT_REQUEST) {
+      setActionProps(action);
+    }
+    // Show confirmation modal for Delete and Approve actions
+    else if (action.key === DELETE_REQUEST || action.key === APPROVE_REQUEST) {
+      setConfirmAction({ action, row: originalRow });
+    } else {
+      setActionProps(action);
+    }
+  };
+
+  const handleConfirmAction = () => {
+    if (confirmAction) {
+      setActionProps(confirmAction.action);
+      setConfirmAction(null);
+    }
+  };
+
+  const getConfirmationMessage = () => {
+    if (!confirmAction) return '';
+    
+    switch (confirmAction.action.key) {
+      case DELETE_REQUEST:
+        return 'Are you sure you want to delete this request? This action cannot be undone.';
+      case REJECT_REQUEST:
+        return 'Are you sure you want to reject this request?';
+      case APPROVE_REQUEST:
+        return 'Are you sure you want to approve this request?';
+      default:
+        return '';
+    }
   };
 
   const renderActionModals = () => {
@@ -368,6 +408,21 @@ const RequestList = () => {
           </DataTable>
           {<FooterPagination displayData={rows} />}
         </>
+      )}
+      
+      {/* Confirmation Modal */}
+      {confirmAction && (
+        <Modal
+          open={true}
+          danger={confirmAction.action.key === DELETE_REQUEST}
+          modalHeading={`Confirm ${confirmAction.action.label}`}
+          primaryButtonText="Confirm"
+          secondaryButtonText="Cancel"
+          onRequestSubmit={handleConfirmAction}
+          onRequestClose={() => setConfirmAction(null)}
+        >
+          <p>{getConfirmationMessage()}</p>
+        </Modal>
       )}
     </>
   );
